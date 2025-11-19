@@ -1,0 +1,74 @@
+---
+# https://taskfile.dev
+version: "3"
+
+dotenv: [".env"]
+
+includes:
+  agent:
+    taskfile: ./agent_retrieval_agent/Taskfile.yml
+    dir: ./agent_retrieval_agent
+  core:
+    taskfile: ./core/Taskfile.yaml
+    dir: ./core
+  frontend:
+    taskfile: ./frontend_web/Taskfile.yaml
+    dir: ./frontend_web
+  web:
+    taskfile: ./web/Taskfile.yaml
+    dir: ./web
+  infra:
+    taskfile: ./infra/Taskfile.yaml
+    dir: ./infra
+
+tasks:
+  install-all:
+    desc: "📦 Install all dependencies for all subprojects that support it"
+    deps:
+      - agent:install
+      - frontend:install
+      - web:install
+      - infra:install
+
+  lint-all:
+    desc: "🧹 Lint all subprojects that support linting"
+    deps:
+      - core:lint
+      - agent:lint
+      - frontend:lint
+      - infra:lint
+      - web:lint
+
+  test-all:
+    desc: "🧪 Test all subprojects that support testing"
+    deps:
+      - web:test
+      - frontend:test
+      - agent:test
+      - core:test
+
+  dev-all:
+    desc: "🚀 Run agent, backend (web), and frontend together"
+    cmds:
+      - |
+        task web:dev-agent &
+        sleep 5
+        task agent:dev &
+        sleep 3
+        task frontend:dev &
+        sleep 8
+        echo "✅ All servers started!"
+        if [[ -n "$NOTEBOOK_ID" ]]; then
+          prefix="${DATAROBOT_API_ENDPOINT//api\/v2/}notebook-sessions/$NOTEBOOK_ID/ports/"
+        else
+          prefix="http://localhost:"
+        fi
+        echo "🔗 Backend: ${prefix}8080"
+        echo "🔗 Frontend: ${prefix}5173"
+        echo "🔗 Agent: ${prefix}8842"
+        wait
+
+  deploy:
+    desc: "🚀 Deploy the infrastructure"
+    cmds:
+      - task infra:deploy
