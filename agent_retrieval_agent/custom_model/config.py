@@ -21,6 +21,6 @@ class Config(DataRobotAppFrameworkBaseSettings):
     Pulumi output variables.
     """
 
-    llm_deployment_id: str
+    llm_deployment_id: str = ""
     llm_default_model: str = "datarobot/azure/gpt-4o-mini"
     use_datarobot_llm_gateway: bool = False

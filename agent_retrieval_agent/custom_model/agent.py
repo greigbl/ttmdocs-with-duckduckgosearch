@@ -121,6 +121,71 @@ class MyAgent:
         Returns:
             str: The model to use.
         """
+        # Check if we have an external LLM configured (for local dev without DataRobot deployment)
+        external_api_key = os.environ.get("OPENAI_API_KEY")
+        has_deployment = bool(self.config.llm_deployment_id)
+        
+        if not has_deployment and external_api_key:
+            # Use external LLM provider for local development
+            azure_api_base = os.environ.get("OPENAI_API_BASE", "")
+            azure_api_version = os.environ.get("OPENAI_API_VERSION", "")
+            azure_deployment_id = os.environ.get("OPENAI_API_DEPLOYMENT_ID", "")
+            is_azure = "azure" in azure_api_base.lower() or azure_api_version
+            
+            if is_azure:
+                # Use Azure OpenAI
+                # For Azure, model name should be "azure/<deployment_id>"
+                azure_model = f"azure/{azure_deployment_id}" if azure_deployment_id else "azure/gpt-4o-mini"
+                if self.verbose:
+                    print(f"Using Azure OpenAI: {azure_model} at {azure_api_base}")
+                return LLM(
+                    model=azure_model,
+                    api_key=external_api_key,
+                    api_base=azure_api_base,
+                    api_version=azure_api_version,
+                    timeout=self.timeout,
+                )
+            else:
+                # Use regular OpenAI
+                env_model = os.environ.get("LLM_DEFAULT_MODEL")
+                if model is None or model.startswith("datarobot/"):
+                    model = env_model or "gpt-4o-mini"
+                
+                # Strip provider prefixes
+                original_model = model
+                for prefix in ["datarobot/", "azure/", "bedrock/", "anthropic.", "vertex_ai/", "openai/"]:
+                    while model.startswith(prefix):
+                        model = model[len(prefix):]
+                
+                # Normalize versioned model names
+                if model.startswith("gpt-4o-") and len(model) > 6:
+                    model = "gpt-4o"
+                elif model.startswith("gpt-4-") and len(model) > 5:
+                    model = "gpt-4"
+                
+                # Map non-OpenAI models
+                model_mappings = {
+                    "gpt-35-turbo": "gpt-3.5-turbo",
+                    "gemini-2.5-flash": "gpt-4o-mini",
+                    "gemini-1.5-flash": "gpt-4o-mini",
+                    "gemini-1.5-pro": "gpt-4o",
+                }
+                if model in model_mappings:
+                    model = model_mappings[model]
+                elif not model.startswith("gpt-") and not model.startswith("o1"):
+                    model = "gpt-4o-mini"
+                
+                if self.verbose:
+                    print(f"Using OpenAI: {model} (original: {original_model})")
+                
+                return LLM(
+                    model=model,
+                    api_key=external_api_key,
+                    api_base=None,
+                    timeout=self.timeout,
+                )
+        
+        # Use DataRobot deployment or LLM Gateway
         api_base = (
             f"{self.api_base_litellm}/api/v2/deployments/{self.config.llm_deployment_id}/chat/completions"
             if use_deployment

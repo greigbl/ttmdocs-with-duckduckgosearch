@@ -4,7 +4,7 @@ version = "0.0.1"
 description = """
 *Talk to My Docs** delivers a seamless **talk-to-your-docs** experience, transforming documents search and summary. Simply connect the application with your document sources. Then, ask a question, and the agents will work with you to achieve your goals.
 """
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 
 dependencies = [
     "datarobot>=3.8.2",
