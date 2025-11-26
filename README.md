@@ -1,4 +1,4 @@
-# Talk to My Docs
+# Talk to My Docs (With DDGS)
 
 A modular, application template for building, developing, and deploying an AI-powered applications with multi-agent orchestration, modern web frontends, and robust infrastructure-as-code to dynamically talk to your documents across different providers such as Google Drive, Box, and your local computer.
 
